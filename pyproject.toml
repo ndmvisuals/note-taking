@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "note-taking"
+version = "0.1.0"
+description = ""
+authors = ["ndmvisuals <70617650+ndmvisuals@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "note_taking"}]
+
+[tool.poetry.scripts]
+note-taking = "note_taking.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+typer = {extras = ["all"], version = "^0.7.0"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
