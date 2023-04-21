@@ -1,4 +1,6 @@
 import os
+import fileinput
+import re
 import typer
 from pathlib import Path
 
@@ -14,6 +16,50 @@ def callback():
     """
 
 BASE_DIR = Path("/Users/nick/Documents/projects/GitHub/ndm_os/notes/")
+
+# Custom Functions
+def keyword_rename(keyword: str, replacement: str, action: bool = False ):
+
+    # Loop through all files in the directory
+    ls_file_names = []
+    number_of_links_change = 0
+    for filename in os.listdir(BASE_DIR):
+        change_flag = False
+        if filename.endswith(".md"): # Check if the keyword is in the file name
+            if keyword in filename:
+                # Replace the keyword with the replacement word in the file name
+                new_filename = filename.replace(keyword, replacement)
+                change_dict = {"original": filename, "change": new_filename}
+                ls_file_names.append(change_dict)
+                change_flag = True
+                if action:
+                    # Rename the file
+                    os.rename(os.path.join(BASE_DIR, filename), os.path.join(BASE_DIR, new_filename))
+                    print(f"Renamed {filename} to {new_filename}")
+            
+            if action:
+                
+                # Loop through each line in the file and change if matches
+                if change_flag: # if the name was changed above then use the new name when searching for links inside the file
+                    filename = new_filename
+                with fileinput.FileInput(os.path.join(BASE_DIR, filename), inplace=True) as file:
+                    # Loop through each line in the file
+                    for line in file:
+                        # Use regex to find all occurrences of the keyword inside double square brackets
+                        pattern = re.compile(r'\[\[(.*?)\]\]')
+                        matches = pattern.findall(line)
+                        
+                        # Loop through each match and replace the keyword with the replacement word
+                        for match in matches:
+                            new_match = match.replace(keyword, replacement)
+                            line = line.replace(f"[[{match}]]", f"[[{new_match}]]")
+                            if f"[[{match}]]" != f"[[{new_match}]]":
+                                number_of_links_change += 1
+                        
+                        # Print the modified line to the file
+                        print(line, end="")
+                # print(f"Updated links in {filename}")
+    return(ls_file_names, number_of_links_change)
 
 
 @app.command()
@@ -44,12 +90,34 @@ def create(keyword: str =  typer.Argument(...),
 
         for file_type in file_types:
             if file_type == keyword:
-                file_name = f"{prefix}.{keyword}.md"
+                file_name = f"{prefix}.{keyword}"
             else:
                 file_name = f"{prefix}.{keyword}.{file_type}"
             file_path = BASE_DIR / f"{file_name}.md"
             file_path.touch(exist_ok=False)
             typer.echo(f"Created {file_name}")
         
+@app.command()
+def rename(keyword: str = typer.Argument(...),
+           replacement: str = typer.Argument(...),
+           force: bool = typer.Option(False, "-f", "--force")):
+    """
+    Rename files with the given keyword and replacement and update all references to it.
+    """
 
+    ls_file_names, links_updated = keyword_rename(keyword, replacement, action= force)
+
+    if force == False: 
+        for file in ls_file_names:
+            typer.echo(f"{file['original']} --> {file['change']}")
+        typer.echo("Number of Files Changes: 0")
+        typer.echo(f"Number of Links Updated: {links_updated}")
+        typer.echo("Please confirm the changes by running the command again with the -f flag")
+    if force == True:
+        typer.echo(f"Renamed {len(ls_file_names)} files")
+        typer.echo(f"Updated {links_updated} links")
+
+
+
+    
     
