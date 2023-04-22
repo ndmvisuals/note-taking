@@ -2,9 +2,11 @@ import os
 import fileinput
 import re
 import typer
+from rich.console import Console
+from rich.table import Table
 from pathlib import Path
 
-
+console = Console()
 app = typer.Typer()
 
 
@@ -18,7 +20,7 @@ def callback():
 BASE_DIR = Path("/Users/nick/Documents/projects/GitHub/ndm_os/notes/")
 
 # Custom Functions
-def keyword_rename(keyword: str, replacement: str, action: bool = False ):
+def keyword_rename(keyword: str, replacement: str, action: bool = False):
 
     # Loop through all files in the directory
     ls_file_names = []
@@ -35,7 +37,6 @@ def keyword_rename(keyword: str, replacement: str, action: bool = False ):
                 if action:
                     # Rename the file
                     os.rename(os.path.join(BASE_DIR, filename), os.path.join(BASE_DIR, new_filename))
-                    print(f"Renamed {filename} to {new_filename}")
             
             if action:
                 
@@ -52,12 +53,14 @@ def keyword_rename(keyword: str, replacement: str, action: bool = False ):
                         # Loop through each match and replace the keyword with the replacement word
                         for match in matches:
                             new_match = match.replace(keyword, replacement)
-                            line = line.replace(f"[[{match}]]", f"[[{new_match}]]")
                             if f"[[{match}]]" != f"[[{new_match}]]":
+                                line = line.replace(f"[[{match}]]", f"[[{new_match}]]")
                                 number_of_links_change += 1
                         
-                        # Print the modified line to the file
-                        print(line, end="")
+                        # Print the modified line to the file only if change was made
+                        if line != file._backup:
+                            print(line, end="")
+                        # print(line, end="")
                 # print(f"Updated links in {filename}")
     return(ls_file_names, number_of_links_change)
 
@@ -105,17 +108,19 @@ def rename(keyword: str = typer.Argument(...),
     Rename files with the given keyword and replacement and update all references to it.
     """
 
-    ls_file_names, links_updated = keyword_rename(keyword, replacement, action= force)
+    ls_file_names, links_updated = keyword_rename(keyword, replacement, action = force)
 
     if force == False: 
+        table = Table(title="Files to be renamed")
+        table.add_column("Original Filename", style="green" , overflow="fold")
+        table.add_column("New Filename", style="red", overflow="fold")
         for file in ls_file_names:
-            typer.echo(f"{file['original']} --> {file['change']}")
-        typer.echo("Number of Files Changes: 0")
-        typer.echo(f"Number of Links Updated: {links_updated}")
-        typer.echo("Please confirm the changes by running the command again with the -f flag")
+            table.add_row(file['original'],file['change'] )
+        console.print(table)
+        console.print("[red]Please confirm the changes by running the command again with the[/red] [white]-f[/white] [red]flag")
     if force == True:
-        typer.echo(f"Renamed {len(ls_file_names)} files")
-        typer.echo(f"Updated {links_updated} links")
+        console.print(f"Renamed [bold]{len(ls_file_names)}[/bold] files")
+        console.print(f"Updated [bold]{links_updated}[/bold] links")
 
 
 
