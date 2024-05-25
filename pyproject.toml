@@ -12,6 +12,8 @@ note-taking = "note_taking.main:app"
 [tool.poetry.dependencies]
 python = "^3.8"
 typer = {extras = ["all"], version = "^0.7.0"}
+pytest = "^8.2.1"
+toml = "^0.10.2"
 
 
 [tool.poetry.group.dev.dependencies]
