@@ -61,12 +61,14 @@ def update_file_references(full_path, keyword, replacement):
 
 def update_files_and_backlinks(keyword: str, replacement: str, action = False, dir_path = BASE_DIR) -> RenameResult:
     files_to_rename = []
+    total_links_updated = 0
     # Rename files
     # ============
     for root, dirs, files in os.walk(dir_path):
         dirs[:] = filter_hidden_directories(dirs)
         for filename in files:
             if filename.endswith((".md", ".txt", ".qmd", ".canvas")):
+                full_path = os.path.join(root, filename)
                 result = process_file(root, filename, keyword, replacement)
                 if result.change_flag:
                     if action == True:
@@ -74,30 +76,11 @@ def update_files_and_backlinks(keyword: str, replacement: str, action = False, d
                         files_to_rename.append(result)
                     else:
                         files_to_rename.append(result)
-
-
-    # Rename Links
-    # ------------
-    total_links_updated = 0
-    for root, dirs, files in os.walk(dir_path):
-        
-
-        dirs[:] = filter_hidden_directories(dirs)
-        
-        for filename in files:
-            if filename.endswith((".md", ".txt", ".qmd", ".canvas")):
-                full_path = os.path.join(root, filename)
-                for rename in files_to_rename:
+                else:
                     if action == True:
-                        n_links_updated = update_file_references(full_path, rename.old_base, rename.new_base)
+                        n_links_updated = update_file_references(full_path, result.old_base, result.new_base)
                         total_links_updated = total_links_updated + n_links_updated
-                    else:
-                        pass
-            
-                
 
-
-                
     return RenameResult(files_to_rename, len(files_to_rename) ,total_links_updated, )
 
 

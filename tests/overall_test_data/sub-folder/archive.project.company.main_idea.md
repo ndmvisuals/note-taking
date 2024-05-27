@@ -1,4 +1,0 @@
-
-# Sample Markdown
-
-Meeting notes
