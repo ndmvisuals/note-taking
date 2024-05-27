@@ -1,13 +1,19 @@
 from dataclasses import dataclass
 from typing import List
 
-@dataclass
-class RenameResult:
-    files_to_rename: List[dict]
-    number_of_links_changed: int
 
 @dataclass
 class FileProcessResult:
     change_flag: bool
-    new_filename: str
-    full_path: str
+    old_full_file_path: str
+    old_base: str
+    new_full_file_path: str
+    new_base: str
+
+
+@dataclass
+class RenameResult:
+    files_to_rename: List[FileProcessResult]
+    number_files_updated: int
+    number_of_links_changed: int
+

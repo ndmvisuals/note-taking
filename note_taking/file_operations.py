@@ -2,40 +2,46 @@ import os
 import fileinput
 import re
 from pathlib import Path
+from note_taking.utils import filter_hidden_directories
 from note_taking.config import BASE_DIR
 from note_taking.models import RenameResult, FileProcessResult
 
-def keyword_rename(keyword: str, replacement: str, action: bool = False) -> RenameResult:
-    files_to_rename = []
-    number_of_links_changed = 0
 
-    for root, dirs, files in os.walk(BASE_DIR):
-        dirs[:] = filter_hidden_directories(dirs)
-        
-        for filename in files:
-            result = process_file(root, filename, keyword, replacement, action)
-            if result.change_flag:
-                files_to_rename.append({"original": result.full_path, "change": os.path.join(root, result.new_filename)})
-                if action:
-                    number_of_links_changed += update_file_references(result.full_path, keyword, replacement)
-                
-    return RenameResult(files_to_rename=files_to_rename, number_of_links_changed=number_of_links_changed)
+def rename_file(original_file_path, new_file_path):
+    os.rename(original_file_path, new_file_path)
 
-def filter_hidden_directories(dirs):
-    return [d for d in dirs if not d.startswith('.')]
 
-def process_file(root, filename, keyword, replacement, action) -> FileProcessResult:
+
+def process_file(root: str, filename: str, keyword: str, replacement:str) -> FileProcessResult:
+    '''
+    This function determines if a file needs to be renamed based on the filename and the pattern we are looking to rename.
+
+    Parameters:
+    - root (str): the root of the file name
+    - filename (str): the filename
+    - keyword (str): the part of the file name heiarchy that needs to be replaced
+    - replacement (str): the file name heiarchy that will replace the old pattern
+
+    Returns:
+    - FileProcessResult Method
+    
+    
+    '''
     change_flag = False
     new_filename = filename
-    full_path = os.path.join(root, filename)
+    new_path = os.path.join(root, new_filename)
+    old_path = os.path.join(root, filename)
+    old_base, _ = os.path.splitext(filename)
+    new_base, _ = os.path.splitext(filename)
     
-    if filename.endswith((".md", ".txt", ".qmd")) and keyword in filename:
+    if filename.endswith((".md", ".txt", ".qmd", ".canvas")) and keyword in filename:
+
         new_filename = filename.replace(keyword, replacement)
+        new_path = os.path.join(root, new_filename)
+        new_base, _ = os.path.splitext(new_filename)
         change_flag = True
-        if action:
-            os.rename(full_path, os.path.join(root, new_filename))
-    
-    return FileProcessResult(change_flag, new_filename, full_path)
+
+    return FileProcessResult(change_flag, old_path, old_base, new_path, new_base)
 
 def update_file_references(full_path, keyword, replacement):
     number_of_links_changed = 0
@@ -51,4 +57,49 @@ def update_file_references(full_path, keyword, replacement):
                     number_of_links_changed += 1
             
             print(line, end="")
-    return number_of_links_changed
+
+    return(number_of_links_changed)
+
+def update_files_and_backlinks(keyword: str, replacement: str, action = False, dir_path = BASE_DIR) -> RenameResult:
+    files_to_rename = []
+    # Rename files
+    # ============
+    for root, dirs, files in os.walk(dir_path):
+        dirs[:] = filter_hidden_directories(dirs)
+        for filename in files:
+            result = process_file(root, filename, keyword, replacement)
+            if result.change_flag:
+                if action == True:
+                    rename_file(result.old_full_file_path, result.new_full_file_path)
+                    files_to_rename.append(result)
+                else:
+                    files_to_rename.append(result)
+
+
+    # Rename Links
+    # ------------
+    total_links_updated = 0
+    for root, dirs, files in os.walk(dir_path):
+        
+
+        dirs[:] = filter_hidden_directories(dirs)
+        for filename in files:
+            full_path = os.path.join(root, filename)
+            for rename in files_to_rename:
+                if action == True:
+                    n_links_updated = update_file_references(full_path, rename.old_base, rename.new_base)
+                    total_links_updated = total_links_updated + n_links_updated
+                else:
+                    pass
+            
+                
+
+
+                
+    return RenameResult(files_to_rename, len(files_to_rename) ,total_links_updated, )
+
+
+
+
+
+    

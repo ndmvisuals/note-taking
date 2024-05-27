@@ -1,8 +1,9 @@
 import typer
 from rich.console import Console
 from rich.table import Table
-from file_operations import keyword_rename, handle_create_command
-from models import RenameResult
+from note_taking.config import BASE_DIR
+from note_taking.file_operations import update_files_and_backlinks
+from note_taking.models import RenameResult
 
 console = Console()
 app = typer.Typer()
@@ -14,23 +15,13 @@ def callback():
     """
 
 @app.command()
-def create(keyword: str = typer.Argument(...),
-           project: bool = typer.Option(False, "-p", "--project"),
-           area: bool = typer.Option(False, "-a", "--area"),
-           resource: bool = typer.Option(False, "-r", "--resource")):
-    """
-    Create files with the given keyword and flag.
-    """
-    handle_create_command(keyword, project, area, resource)
-
-@app.command()
 def rename(keyword: str = typer.Argument(...),
            replacement: str = typer.Argument(...),
            force: bool = typer.Option(False, "-f", "--force")):
     """
     Rename files with the given keyword and replacement and update all references to it.
     """
-    result = keyword_rename(keyword, replacement, action=force)
+    result = update_files_and_backlinks(keyword, replacement, action=force)
 
     if not force:
         display_rename_table(result.files_to_rename)
@@ -44,5 +35,5 @@ def display_rename_table(files_to_rename):
     table.add_column("Original Filename", style="green", overflow="fold")
     table.add_column("New Filename", style="red", overflow="fold")
     for file in files_to_rename:
-        table.add_row(file['original'], file['change'])
+        table.add_row(file.old_base, file.new_base)
     console.print(table)
