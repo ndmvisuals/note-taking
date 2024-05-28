@@ -5,6 +5,7 @@ from pathlib import Path
 from note_taking.utils import filter_hidden_directories
 from note_taking.config import BASE_DIR
 from note_taking.models import RenameResult, FileProcessResult
+from tqdm import tqdm
 
 
 def rename_file(original_file_path, new_file_path):
@@ -68,20 +69,21 @@ def update_files_and_backlinks(keyword: str, replacement: str, action = False, d
         dirs[:] = filter_hidden_directories(dirs)
         for filename in files:
             if filename.endswith((".md", ".txt", ".qmd", ".canvas")):
-                full_path = os.path.join(root, filename)
                 result = process_file(root, filename, keyword, replacement)
-                if result.change_flag:
+                if result.change_flag == True:
                     if action == True:
                         rename_file(result.old_full_file_path, result.new_full_file_path)
                         files_to_rename.append(result)
+                        n_links_updated = update_file_references(result.new_full_file_path, keyword, replacement)
+                        total_links_updated = total_links_updated + n_links_updated
                     else:
                         files_to_rename.append(result)
                 else:
                     if action == True:
-                        n_links_updated = update_file_references(full_path, result.old_base, result.new_base)
+                        n_links_updated = update_file_references(result.old_full_file_path, keyword, replacement)
                         total_links_updated = total_links_updated + n_links_updated
 
-    return RenameResult(files_to_rename, len(files_to_rename) ,total_links_updated, )
+    return RenameResult(files_to_rename, len(files_to_rename) ,total_links_updated)
 
 
 

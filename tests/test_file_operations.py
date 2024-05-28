@@ -82,5 +82,7 @@ def test_replace_links():
     
 
 def test_overall():
-      expected_result = update_files_and_backlinks("project.company.main_idea", "archive.project.company.main_idea", action = True, dir_path = "./tests/overall_test_data/")
-      assert RenameResult([FileProcessResult(True,"./tests/overall_test_data/sub-folder/project.company.main_idea.md", "project.company.main_idea", "./tests/overall_test_data/sub-folder/archive.project.company.main_idea.md", "archive.project.company.main_idea"  )], 1, 1) == expected_result
+      expected_result = RenameResult([FileProcessResult(True,"./tests/overall_test_data/sub-folder/project.company.main_idea.md", "project.company.main_idea", "./tests/overall_test_data/sub-folder/archive.project.company.main_idea.md", "archive.project.company.main_idea"  )], 1, 1)
+      assert update_files_and_backlinks("project.company.main_idea", "archive.project.company.main_idea", action = True, dir_path = "./tests/overall_test_data/")  == expected_result
+
+
